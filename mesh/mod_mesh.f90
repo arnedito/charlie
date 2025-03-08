@@ -1,12 +1,12 @@
     module mod_mesh
-        use constants, only: ip, rp  ! Using your type definitions and precision constants
+        use constants, only: ip, rp
         implicit none
         public :: Mesh, read_domain
 
         !>----------------------------------------------------------------------
         !> Unified Mesh Type
         !>----------------------------------------------------------------------
-        type :: Mesh
+        type :: mesh_type
             integer(ip)                 :: ndim = 0             ! Spatial dimension (e.g., 2 or 3)
             integer(ip)                 :: npoin = 0            ! Total number of nodes
             integer(ip)                 :: nelem = 0            ! Total number of elements
@@ -14,7 +14,7 @@
             real(rp), allocatable       :: coords(:,:)          ! Node coordinates: (npoin x ndim)
             integer(ip), allocatable    :: connectivity(:,:)    ! Element connectivity: (nelem x nodes_per_element)
             integer(ip), allocatable    :: boundary(:)          ! Boundary condition codes (size: nboun)
-        end type Mesh
+        end type mesh_type
 
     contains
 
@@ -25,7 +25,7 @@
 
         subroutine read_domain(dom_filename, geo_filename, fix_filename, mesh)
             character(len=*), intent(in) :: dom_filename, geo_filename, fix_filename
-            type(Mesh), intent(out) :: mesh
+            type(mesh_type), intent(out) :: mesh
             character(len=256) :: line, dummy
             integer(ip) :: ios
 
@@ -107,26 +107,26 @@
                 case default
                     if (inside_coords) then
                         ! Expected format: node_id x y [z]
+                        integer(ip) :: node_id
+                        real(rp) :: x, y, z  ! Declare all possible needed variables
+
                         if (mesh % ndim == 2) then
-                            integer(ip) :: node_id
-                            real(rp) :: x, y
                             read(line, *) node_id, x, y
                             mesh % coords(node_id, 1) = x
                             mesh % coords(node_id, 2) = y
                         else if (mesh % ndim == 3) then
-                            integer(ip) :: node_id
-                            real(rp) :: x, y, z
                             read(line, *) node_id, x, y, z
                             mesh % coords(node_id, 1) = x
                             mesh % coords(node_id, 2) = y
                             mesh % coords(node_id, 3) = z
                         end if
+
                     else if (inside_elems) then
-                            ! Expected format: elem_id node1 node2 node3
-                            integer(ip) :: elem_id, n1, n2, n3
-                            read(line, *) elem_id, n1, n2, n3
-                            mesh % connectivity(elem_id, :) = (/ n1, n2, n3 /)
-                     end if
+                        ! Expected format: elem_id node1 node2 node3
+                        integer(ip) :: elem_id, n1, n2, n3
+                        read(line, *) elem_id, n1, n2, n3
+                        mesh % connectivity(elem_id, :) = (/ n1, n2, n3 /)
+                    end if
                 end select
             end do
 
