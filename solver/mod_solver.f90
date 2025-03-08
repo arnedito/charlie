@@ -10,7 +10,7 @@
 
         ! Assemble the system matrix A and right-hand side vector b.
         subroutine assemble_system(mesh, sol, A, b)
-            type(Mesh), intent(in)  :: mesh
+            type(mesh_type), intent(in)  :: mesh
             real(rp), intent(in)    :: sol(:)              ! Example: state vector (velocity/pressure)
             real(rp), intent(out)   :: A(:,:)              ! System matrix (dense placeholder)
             real(rp), intent(out)   :: b(:)                ! Right-hand side vector
@@ -29,7 +29,7 @@
 
         subroutine solve_newton(mesh, sol, dt)
 
-                type(Mesh), intent(in) :: mesh
+                type(mesh_type), intent(in) :: mesh
                 real(rp), intent(inout) :: sol(:)
                 real(rp), intent(in) :: dt
                 integer :: n, newton_iter
@@ -58,7 +58,7 @@
         ! Time integration routine using BDF2 or Trapezoidal rule.
         subroutine time_integration(mesh, sol, dt, nsteps)
 
-            type(Mesh), intent(in) :: mesh
+            type(mesh_type), intent(in) :: mesh
             real(rp), intent(inout) :: sol(:)
             real(rp), intent(in) :: dt
             integer, intent(in) :: nsteps

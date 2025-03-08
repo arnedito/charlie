@@ -9,7 +9,7 @@
 
     ! > Write the solution to a binary file (mpio.bin) for later conversion.
         subroutine write_output(mesh, sol, step, rank)
-            type(Mesh), intent(in) :: mesh
+            type(mesh_type), intent(in) :: mesh
             real(rp), intent(in) :: sol(:)
             integer, intent(in) :: step, rank
             character(len=100) :: filename
