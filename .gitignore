@@ -1,0 +1,14 @@
+# Compilation files
+*.o
+*.mod
+*.exe
+*.out
+
+# Temporary files
+*~
+*.tmp
+
+# System folders
+__MACOSX/
+.DS_Store
+
