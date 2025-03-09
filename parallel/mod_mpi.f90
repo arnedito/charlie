@@ -7,11 +7,13 @@
     !-----------------------------------------------------------------
     module mod_mpi
         use mpi
+        use mod_parallel,   only: partition_mesh
+        use mod_mesh,       only: mesh_type
         implicit none
 
         ! Public entities accessible from other modules
         public :: mpi_init_wrapper, mpi_finalize_wrapper, mpi_barrier_wrapper
-        public :: get_mpi_comm, mpirank, mpisize, mpi_comm_global
+        public :: get_mpi_comm, mpirank, mpisize, mpi_comm_global, distribute_mesh
 
         ! Global communicator for all MPI processes (default: MPI_COMM_WORLD)
         integer :: mpi_comm_global = MPI_COMM_WORLD
@@ -37,7 +39,7 @@
             !-------------------------------------------------------------
             call MPI_Init(mpierr)
             if (mpierr /= MPI_SUCCESS) then
-                print *, "Error initializing MPI!"
+                print *, "❌ Error initializing MPI!"
                 stop
             end if
             call MPI_Comm_rank(MPI_COMM_WORLD, mpirank, mpierr)
@@ -55,7 +57,7 @@
             !-------------------------------------------------------------
             call MPI_Finalize(mpierr)
             if (mpierr /= MPI_SUCCESS) then
-                print *, "Error finalizing MPI!"
+                print *, "❌ Error finalizing MPI!"
             end if
         end subroutine mpi_finalize_wrapper
         !-----------------------------------------------------------------
@@ -82,5 +84,13 @@
             comm = mpi_comm_global
         end function get_mpi_comm
         !-----------------------------------------------------------------
+
+        !-----------------------------------------------------------------
+         subroutine distribute_mesh(mesh)
+             ! Distributes the mesh among MPI processes
+             type(mesh_type), intent(inout) :: mesh
+             call partition_mesh(mesh, mpirank, mpisize)
+         end subroutine distribute_mesh
+         !-----------------------------------------------------------------
 
     end module mod_mpi
