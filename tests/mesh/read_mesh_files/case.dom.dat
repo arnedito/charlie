@@ -1,0 +1,22 @@
+ $--------------------------------------------------
+ DIMENSIONS
+   NODAL_POINTS    142 
+   ELEMENTS        242 
+   BOUNDARIES      40   
+   SPACE_DIMENSIONS=         2 
+   TYPES_OF_ELEMS=             TRI03               
+ END_DIMENSIONS
+ $-------------------------------------------------- 
+ GEOMETRY
+   INCLUDE  case.geo.dat
+ END_GEOMETRY
+ $--------------------------------------------------
+ BOUNDARY_CONDITIONS
+  ON_BOUNDARIES
+   INCLUDE  case.fix.dat
+  END_ON_BOUNDARIES
+ 
+  ON_NODES
+  END_ON_NODES
+ END_BOUNDARY_CONDITIONS
+ $--------------------------------------------------
