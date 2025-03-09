@@ -26,8 +26,8 @@
         subroutine read_domain(dom_filename, geo_filename, fix_filename, mesh)
             character(len=*), intent(in) :: dom_filename, geo_filename, fix_filename
             type(mesh_type), intent(out) :: mesh
-            character(len=256) :: line, dummy
-            integer(ip) :: ios
+            character(len=256)           :: line, dummy
+            integer(ip)                  :: ios
 
             ! Initialize temporary values
             mesh % npoin = 0
@@ -89,6 +89,7 @@
 
             ! Allocate arrays based on domain file values
             allocate(mesh % coords(mesh % npoin, mesh % ndim))
+
             ! Assuming triangular elements: 3 nodes per element
             allocate(mesh % connectivity(mesh % nelem, 3))
 
@@ -134,10 +135,11 @@
         !> read_fix_dat: Reads the boundary conditions from the case.fix.dat file.
         !>-----------------------------------------------------------------------
         subroutine read_fix_dat(fix_filename, mesh)
-            character(len=*), intent(in) :: fix_filename
-            type(mesh_type), intent(inout) :: mesh
-            character(len=256) :: line
-            integer(ip) :: ios, i
+            character(len=*), intent(in)    :: fix_filename
+            type(mesh_type), intent(inout)  :: mesh
+            character(len=256)              :: line
+            integer(ip)                     :: ios, i, id, code
+
             ! For simplicity, assume fix file has a header line followed by:
             ! element_or_node_id, boundary_code
             open(unit=30, file=trim(fix_filename), status="old", action="read", iostat=ios)
@@ -153,7 +155,6 @@
             read(30, '(A)', iostat=ios) line
 
             do i = 1, mesh % nboun
-                integer(ip) :: id, code
                 read(30, *) id, code
                 ! Here, you may wish to map id to a particular node/element.
                 mesh % boundary(i) = code
