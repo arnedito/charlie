@@ -12,3 +12,6 @@
 __MACOSX/
 .DS_Store
 
+tests/parallel/test_mpi
+tests/solver/test_solver
+tests/mesh/read_mesh_files/test_read_mesh
