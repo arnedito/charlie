@@ -1,0 +1,22 @@
+$--------------------------------------------------
+ DIMENSIONS
+   NODAL_POINTS    234
+   ELEMENTS        1109
+   BOUNDARIES      400
+   SPACE_DIMENSIONS=         3
+   TYPES_OF_ELEMS=             TET04
+ END_DIMENSIONS
+$--------------------------------------------------
+ GEOMETRY
+   INCLUDE  case.geo.dat
+ END_GEOMETRY
+$--------------------------------------------------
+ BOUNDARY_CONDITIONS
+  ON_BOUNDARIES
+   INCLUDE  case.fix.dat
+  END_ON_BOUNDARIES
+
+  ON_NODES
+  END_ON_NODES
+ END_BOUNDARY_CONDITIONS
+$--------------------------------------------------

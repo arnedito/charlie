@@ -15,4 +15,6 @@ __MACOSX/
 tests/parallel/test_mpi
 tests/solver/test_solver
 tests/mesh/read_mesh_files/test_read_mesh
+tests/mesh/read_mesh_3d/test_read_mesh_3d
 venv/
+tests/mesh/read_mesh_3d/test_read_mesh_3d
