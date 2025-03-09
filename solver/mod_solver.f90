@@ -10,59 +10,63 @@
 
         ! Assemble the system matrix A and right-hand side vector b.
         subroutine assemble_system(mesh, sol, A, b)
-            type(mesh_type), intent(in)  :: mesh
-            real(rp), intent(in)    :: sol(:)              ! Example: state vector (velocity/pressure)
-            real(rp), intent(out)   :: A(:,:)              ! System matrix (dense placeholder)
-            real(rp), intent(out)   :: b(:)                ! Right-hand side vector
-            integer :: n
+            type(mesh_type), intent(in)         :: mesh
+            real(rp), intent(in)                :: sol(:)
+            real(rp), allocatable, intent(out)  :: A(:,:), b(:)
+            integer(ip) :: n
 
-            n = size(sol)
-            ! Dummy assembly: create an identity matrix and set b = state.
-            allocate(A(n,n))
+            ! Initialize problem size
+            n = mesh % npoin
+
+            ! Allocate system matrix and right-hand side vector
+            if (.not. allocated(A)) allocate(A(n, n))
+            if (.not. allocated(b)) allocate(b(n))
+
+            ! Dummy initialization (Replace with actual system assembly)
             A = 0.0_rp
-            A(1 : n, 1 : n) = 1.0_rp
-            b = sol
+            b = 0.0_rp
+
         end subroutine assemble_system
 
 
         ! A simple Newton solver to update the solution state.
-
+        !
         subroutine solve_newton(mesh, sol, dt)
+            type(mesh_type), intent(in)         :: mesh
+            real(rp), intent(inout)             :: sol(:)
+            real(rp), intent(in)                :: dt
+            integer                             :: n, newton_iter
+            real(rp)                            :: res_norm, tol
+            real(rp), allocatable               :: A(:,:), b(:), x(:)
 
-                type(mesh_type), intent(in) :: mesh
-                real(rp), intent(inout) :: sol(:)
-                real(rp), intent(in) :: dt
-                integer :: n, newton_iter
-                real(rp) :: res_norm, tol
-                real(rp), allocatable :: A(:,:), b(:), x(:)
+            n = size(sol)
+            tol = 1.0e-6_rp
+            newton_iter = 0_ip
+            res_norm = 1.0_rp
 
-                n = size(sol)
-                tol = 1.0e-6_rp
-                newton_iter = 0_ip
-                res_norm = 1.0_rp
-
-                do while (res_norm > tol .and. newton_iter < 10_ip)
-                    call assemble_system(mesh, state, A, b)
+            do while (res_norm > tol .and. newton_iter < 10_ip)
+                    call assemble_system(mesh, sol, A, b)
                     ! For demonstration, solve A * x = b (here, A is identity, so x = b).
                     allocate(x(n))
                     x = b
-                    sol = sol - x   ! Update state with Newton correction
+                    sol = sol - x   ! Update solution with Newton correction
                     res_norm = norm(x, n)
                     newton_iter = newton_iter + 1
                     print*, 'Newton iteration:', newton_iter, ' Residual norm:', res_norm
                     deallocate(x)
                 end do
-                deallocate(A, b)
+
+            deallocate(A, b)
         end subroutine solve_newton
 
         ! Time integration routine using BDF2 or Trapezoidal rule.
         subroutine time_integration(mesh, sol, dt, nsteps)
 
-            type(mesh_type), intent(in) :: mesh
-            real(rp), intent(inout) :: sol(:)
-            real(rp), intent(in) :: dt
-            integer, intent(in) :: nsteps
-            integer :: step
+            type(mesh_type), intent(in)         :: mesh
+            real(rp), intent(inout)             :: sol(:)
+            real(rp), intent(in)                :: dt
+            integer, intent(in)                 :: nsteps
+            integer                             :: step
 
             do step = 1, nsteps
                 print*, 'Time step ', step, ' dt = ', dt
