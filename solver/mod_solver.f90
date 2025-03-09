@@ -1,4 +1,4 @@
-    module solver_module
+    module mod_solver
         use constants
         use mod_mesh
         use utils
@@ -76,4 +76,4 @@
 
         end subroutine time_integration
 
-    end module solver_module
+    end module mod_solver
