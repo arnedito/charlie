@@ -43,8 +43,6 @@
             call MPI_Comm_rank(MPI_COMM_WORLD, mpirank, mpierr)
             call MPI_Comm_size(MPI_COMM_WORLD, mpisize, mpierr)
 
-            ! Informative output to confirm successful initialization
-            print *, "Process ", mpirank, " of ", mpisize, " initialized."
         end subroutine mpi_init_wrapper
         !-----------------------------------------------------------------
 
