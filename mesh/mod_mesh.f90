@@ -1,7 +1,7 @@
     module mod_mesh
         use constants, only: ip, rp
         implicit none
-        public :: Mesh, read_domain
+        public :: mesh_type, read_domain
 
         !>----------------------------------------------------------------------
         !> Unified Mesh Type
@@ -71,11 +71,12 @@
         ! read_geo_dat: Reads the COORDINATES and ELEMENTS sections from the geo file.
         !-----------------------------------------------------------------------
         subroutine read_geo_dat(geo_filename, mesh)
-            character(len=*), intent(in) :: geo_filename
-            type(Mesh), intent(inout) :: mesh
-            character(len=256) :: line
-            integer(ip) :: ios, i
-            logical :: inside_coords, inside_elems
+            character(len=*), intent(in)    ::  geo_filename
+            type(mesh_type), intent(inout)  ::  mesh
+            character(len=256)              ::  line
+            integer(ip)                     ::  ios, i, node_id, elem_id, n1, n2, n3
+            logical                         ::  inside_coords, inside_elems
+            real(rp)                        ::  x, y, z
 
             inside_coords = .false.
             inside_elems = .false.
@@ -107,9 +108,6 @@
                 case default
                     if (inside_coords) then
                         ! Expected format: node_id x y [z]
-                        integer(ip) :: node_id
-                        real(rp) :: x, y, z  ! Declare all possible needed variables
-
                         if (mesh % ndim == 2) then
                             read(line, *) node_id, x, y
                             mesh % coords(node_id, 1) = x
@@ -123,7 +121,6 @@
 
                     else if (inside_elems) then
                         ! Expected format: elem_id node1 node2 node3
-                        integer(ip) :: elem_id, n1, n2, n3
                         read(line, *) elem_id, n1, n2, n3
                         mesh % connectivity(elem_id, :) = (/ n1, n2, n3 /)
                     end if
@@ -138,7 +135,7 @@
         !>-----------------------------------------------------------------------
         subroutine read_fix_dat(fix_filename, mesh)
             character(len=*), intent(in) :: fix_filename
-            type(Mesh), intent(inout) :: mesh
+            type(mesh_type), intent(inout) :: mesh
             character(len=256) :: line
             integer(ip) :: ios, i
             ! For simplicity, assume fix file has a header line followed by:
