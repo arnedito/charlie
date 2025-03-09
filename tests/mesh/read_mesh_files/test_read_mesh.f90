@@ -1,24 +1,28 @@
     program test_mesh
-        use mod_mesh        ! Uses our module with mesh_type and read_domain
-        use constants       ! For ip, rp
+        use mod_mesh        ! Mesh module for handling mesh data
+        use constants       ! Constants for data types
         implicit none
 
         type(mesh_type) :: mesh
 
-        ! Read a sample mesh from test files (replace with your actual test files)
-        call read_domain("case.dom.dat", "case.geo.dat", "case.fix.dat", mesh)
+        ! Load the mesh from test files
+        call read_domain("tests/mesh/read_mesh_files/case.dom.dat", &
+                        "tests/mesh/read_mesh_files/case.geo.dat", &
+                        "tests/mesh/read_mesh_files/case.fix.dat", mesh)
 
-        ! Print basic information about the mesh
+        ! Output mesh information
+        print*, "✅ Mesh successfully loaded."
         print*, "Number of nodes: ", mesh % npoin
-        print*, "Number of elements: ",mesh % nelem
+        print*, "Number of elements: ", mesh % nelem
         print*, "Number of boundaries: ", mesh % nboun
 
-        ! Optionally, print first few node coordinates
+        ! Display the first few node coordinates
         print*, "First 5 node coordinates:"
         call print_matrix(mesh % coords, min(5, mesh % npoin), mesh % ndim)
 
     contains
 
+        ! Prints a matrix with the specified number of rows and columns
         subroutine print_matrix(mat, nrows, ncols)
             real(rp), intent(in)    ::    mat(:,:)
             integer, intent(in)     ::    nrows, ncols

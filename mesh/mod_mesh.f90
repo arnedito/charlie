@@ -1,4 +1,5 @@
     module mod_mesh
+        use iso_fortran_env
         use constants, only: ip, rp
         implicit none
         public :: mesh_type, read_domain
@@ -7,41 +8,45 @@
         !> Unified Mesh Type
         !>----------------------------------------------------------------------
         type :: mesh_type
-            integer(ip)                 :: ndim = 0             ! Spatial dimension (e.g., 2 or 3)
-            integer(ip)                 :: npoin = 0            ! Total number of nodes
-            integer(ip)                 :: nelem = 0            ! Total number of elements
-            integer(ip)                 :: nboun = 0            ! Total number of boundaries
-            real(rp), allocatable       :: coords(:,:)          ! Node coordinates: (npoin x ndim)
-            integer(ip), allocatable    :: connectivity(:,:)    ! Element connectivity: (nelem x nodes_per_element)
-            integer(ip), allocatable    :: boundary(:)          ! Boundary condition codes (size: nboun)
+            integer(ip)                 :: ndim = 0
+            integer(ip)                 :: npoin = 0
+            integer(ip)                 :: nelem = 0
+            integer(ip)                 :: nboun = 0
+            real(rp), allocatable       :: coords(:,:)
+            integer(ip), allocatable    :: connectivity(:,:)
+            integer(ip), allocatable    :: boundary(:)
         end type mesh_type
 
     contains
 
         !>-----------------------------------------------------------------------
-        !> read_domain: Reads the unified mesh format using case.dom.dat, case.geo.dat,
-        !> and case.fix.dat. It extracts metadata, geometry, and boundary conditions.
+        !> read_domain: Reads the mesh using user-provided file paths
         !>-----------------------------------------------------------------------
-
         subroutine read_domain(dom_filename, geo_filename, fix_filename, mesh)
             character(len=*), intent(in) :: dom_filename, geo_filename, fix_filename
             type(mesh_type), intent(out) :: mesh
-            character(len=256)           :: line, dummy
-            integer(ip)                  :: ios
+            character(len=256) :: line, dummy
+            integer(ip) :: ios
 
-            ! Initialize temporary values
+            ! Debugging: Print the file paths
+            print *, "Trying to open domain file: ", trim(dom_filename)
+            print *, "Trying to open geometry file: ", trim(geo_filename)
+            print *, "Trying to open fix file: ", trim(fix_filename)
+
+            ! Initialize mesh values
             mesh % npoin = 0
             mesh % nelem = 0
             mesh % nboun = 0
             mesh % ndim = 0
 
-            !--- Read domain file: extract metadata ---
+            ! Open domain file
             open(unit=10, file=trim(dom_filename), status="old", action="read", iostat=ios)
             if (ios /= 0) then
-                print*, "Error opening ", trim(dom_filename)
+                print*, "❌ Error opening ", trim(dom_filename)
                 stop
             end if
 
+            ! Read domain metadata
             do
                 read(10, '(A)', iostat=ios) line
                 if (ios /= 0) exit
@@ -60,37 +65,32 @@
 
             close(10)
 
-            !--- Read geometry file: node coordinates and connectivity ---
+            ! Read geometry and fix files
             call read_geo_dat(geo_filename, mesh)
-
-            !--- Read fix file: boundary conditions ---
             call read_fix_dat(fix_filename, mesh)
         end subroutine read_domain
 
-        !-----------------------------------------------------------------------
-        ! read_geo_dat: Reads the COORDINATES and ELEMENTS sections from the geo file.
-        !-----------------------------------------------------------------------
+        !>-----------------------------------------------------------------------
+        !> read_geo_dat: Reads node coordinates and element connectivity.
+        !>-----------------------------------------------------------------------
         subroutine read_geo_dat(geo_filename, mesh)
-            character(len=*), intent(in)    ::  geo_filename
-            type(mesh_type), intent(inout)  ::  mesh
-            character(len=256)              ::  line
-            integer(ip)                     ::  ios, i, node_id, elem_id, n1, n2, n3
-            logical                         ::  inside_coords, inside_elems
-            real(rp)                        ::  x, y, z
+            character(len=*), intent(in) :: geo_filename
+            type(mesh_type), intent(inout) :: mesh
+            character(len=256) :: line
+            integer(ip) :: ios, node_id, elem_id, n1, n2, n3
+            logical :: inside_coords, inside_elems
+            real(rp) :: x, y, z
 
             inside_coords = .false.
             inside_elems = .false.
 
             open(unit=20, file=trim(geo_filename), status="old", action="read", iostat=ios)
             if (ios /= 0) then
-                print*, "Error opening ", trim(geo_filename)
+                print*, "❌ Error opening ", trim(geo_filename)
                 stop
             end if
 
-            ! Allocate arrays based on domain file values
             allocate(mesh % coords(mesh % npoin, mesh % ndim))
-
-            ! Assuming triangular elements: 3 nodes per element
             allocate(mesh % connectivity(mesh % nelem, 3))
 
             do
@@ -108,7 +108,6 @@
                     inside_elems = .false.
                 case default
                     if (inside_coords) then
-                        ! Expected format: node_id x y [z]
                         if (mesh % ndim == 2) then
                             read(line, *) node_id, x, y
                             mesh % coords(node_id, 1) = x
@@ -119,9 +118,7 @@
                             mesh % coords(node_id, 2) = y
                             mesh % coords(node_id, 3) = z
                         end if
-
                     else if (inside_elems) then
-                        ! Expected format: elem_id node1 node2 node3
                         read(line, *) elem_id, n1, n2, n3
                         mesh % connectivity(elem_id, :) = (/ n1, n2, n3 /)
                     end if
@@ -132,36 +129,31 @@
         end subroutine read_geo_dat
 
         !>-----------------------------------------------------------------------
-        !> read_fix_dat: Reads the boundary conditions from the case.fix.dat file.
+        !> read_fix_dat: Reads boundary conditions from fix file.
         !>-----------------------------------------------------------------------
         subroutine read_fix_dat(fix_filename, mesh)
-            character(len=*), intent(in)    :: fix_filename
-            type(mesh_type), intent(inout)  :: mesh
-            character(len=256)              :: line
-            integer(ip)                     :: ios, i, id, code
+            character(len=*), intent(in) :: fix_filename
+            type(mesh_type), intent(inout) :: mesh
+            character(len=256) :: line
+            integer(ip) :: ios, i, id, code
 
-            ! For simplicity, assume fix file has a header line followed by:
-            ! element_or_node_id, boundary_code
             open(unit=30, file=trim(fix_filename), status="old", action="read", iostat=ios)
             if (ios /= 0) then
-                print*, "Error opening ", trim(fix_filename)
+                print*, "❌ Error opening ", trim(fix_filename)
                 stop
             end if
 
-            ! Allocate boundary condition array (size: nboun)
             allocate(mesh%boundary(mesh%nboun))
 
-            ! Skip header (e.g., "ON_BOUNDARIES")
+            ! Skip header
             read(30, '(A)', iostat=ios) line
 
             do i = 1, mesh % nboun
                 read(30, *) id, code
-                ! Here, you may wish to map id to a particular node/element.
                 mesh % boundary(i) = code
             end do
 
             close(30)
-
         end subroutine read_fix_dat
 
     end module mod_mesh
