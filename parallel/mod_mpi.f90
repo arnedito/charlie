@@ -7,13 +7,13 @@
     !-----------------------------------------------------------------
     module mod_mpi
         use mpi
-        use mod_parallel,   only: partition_mesh
         use mod_mesh,       only: mesh_type
         implicit none
 
         ! Public entities accessible from other modules
         public :: mpi_init_wrapper, mpi_finalize_wrapper, mpi_barrier_wrapper
-        public :: get_mpi_comm, mpirank, mpisize, mpi_comm_global, distribute_mesh
+        public :: get_mpi_comm, mpirank, mpisize, mpi_comm_global
+        public :: distribute_mesh
 
         ! Global communicator for all MPI processes (default: MPI_COMM_WORLD)
         integer :: mpi_comm_global = MPI_COMM_WORLD
@@ -24,6 +24,16 @@
 
         ! Variable to capture MPI error codes for error checking
         integer :: mpierr
+
+        ! Interface for partition_mesh (which is in mod_parallel)
+        interface
+            subroutine partition_mesh(mesh, rank, nprocs)
+                use mod_mesh, only: mesh_type
+                implicit none
+                type(mesh_type), intent(inout) :: mesh
+                integer, intent(in) :: rank, nprocs
+             end subroutine partition_mesh
+        end interface
 
     contains
 
@@ -86,11 +96,11 @@
         !-----------------------------------------------------------------
 
         !-----------------------------------------------------------------
-         subroutine distribute_mesh(mesh)
+        subroutine distribute_mesh(mesh)
              ! Distributes the mesh among MPI processes
              type(mesh_type), intent(inout) :: mesh
              call partition_mesh(mesh, mpirank, mpisize)
-         end subroutine distribute_mesh
-         !-----------------------------------------------------------------
+        end subroutine distribute_mesh
+        !-----------------------------------------------------------------
 
     end module mod_mpi

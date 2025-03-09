@@ -10,9 +10,10 @@
 
     module mod_parallel
         use mpi
-        use mod_mpi,        only: mpirank, mpisize, mpi_comm_global
+        use mod_mpi,        only: mpirank, mpisize, mpi_comm_global, mpi_barrier_wrapper
         use mod_mesh,       only: mesh_type
         implicit none
+
         public :: master_worker, partition_mesh
 
     contains
@@ -100,9 +101,11 @@
             allocate(mesh % connectivity(num_local_elems, size(mesh % connectivity, 2)))
 
             ! Receive data from Rank 0
-            call MPI_Recv(mesh % connectivity, num_local_elems * size(mesh % connectivity, 2), MPI_INTEGER, 0, 0, mpi_comm_global, MPI_STATUS_IGNORE, ierr)
+            call MPI_Recv(mesh % connectivity, &
+                          num_local_elems * size(mesh % connectivity, 2), &
+                          MPI_INTEGER, 0, 0, mpi_comm_global, MPI_STATUS_IGNORE, ierr)
 
-            end subroutine receive_partition
-            !-----------------------------------------------------------------
+        end subroutine receive_partition
+        !-----------------------------------------------------------------
 
     end module mod_parallel

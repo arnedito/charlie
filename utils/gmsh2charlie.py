@@ -96,7 +96,7 @@ def convert_msh_to_dat(msh_file):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python utils/convert_msh_to_dat.py <mesh_file.msh>")
+        print("Usage: python utils/gmsh2charlie.py <mesh_file.msh>")
         sys.exit(1)
 
     msh_file = sys.argv[1]  # Get filename from command-line argument
