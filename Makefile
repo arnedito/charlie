@@ -2,10 +2,12 @@
 FC = mpif90
 FLAGS = -O2 -J modules/ -I modules/
 
-# Core Modules (Ensure correct order)
+# Core Modules (Ensure correct compilation order)
 MODULES = modules/constants.f90 modules/utils.f90 \
           mesh/mod_mesh.f90 \
-          parallel/mod_parallel.f90 parallel/mod_mpi.f90 \
+          parallel/mod_partition.f90 \
+          parallel/mod_mpi.f90 \
+          parallel/mod_parallel.f90 \
           solver/mod_solver.f90
 
 # Object files (store in modules/)
@@ -39,12 +41,15 @@ modules/utils.o: modules/utils.f90
 modules/mod_mesh.o: mesh/mod_mesh.f90
 	$(FC) -c $< $(FLAGS) -o $@
 
-
-modules/mod_parallel.o: parallel/mod_parallel.f90 modules/mod_mpi.o
+# Compile partitioning module (must be before MPI modules)
+modules/mod_partition.o: parallel/mod_partition.f90 modules/mod_mesh.o
 	$(FC) -c $< $(FLAGS) -o $@
 
+# Compile MPI modules
+modules/mod_mpi.o: parallel/mod_mpi.f90 modules/mod_partition.o
+	$(FC) -c $< $(FLAGS) -o $@
 
-modules/mod_mpi.o: parallel/mod_mpi.f90 modules/mod_mesh.o
+modules/mod_parallel.o: parallel/mod_parallel.f90 modules/mod_mpi.o
 	$(FC) -c $< $(FLAGS) -o $@
 
 # Compile solver module (depends on mod_mesh and MPI modules)

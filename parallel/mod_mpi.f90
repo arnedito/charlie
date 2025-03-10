@@ -7,6 +7,7 @@
     !-----------------------------------------------------------------
     module mod_mpi
         use mpi
+        use mod_partition,  only: partition_mesh
         use mod_mesh,       only: mesh_type
         implicit none
 
@@ -24,16 +25,6 @@
 
         ! Variable to capture MPI error codes for error checking
         integer :: mpierr
-
-        ! Interface for partition_mesh (which is in mod_parallel)
-        interface
-            subroutine partition_mesh(mesh, rank, nprocs)
-                use mod_mesh, only: mesh_type
-                implicit none
-                type(mesh_type), intent(inout) :: mesh
-                integer, intent(in) :: rank, nprocs
-             end subroutine partition_mesh
-        end interface
 
     contains
 
