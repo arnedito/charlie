@@ -26,9 +26,9 @@ program test_solver
     ! Step 1: Read Mesh from Test Case Files
     !--------------------------------------------------------------
     print*, "Reading mesh files..."
-    call read_domain("case.dom.dat", &
-                    "case.geo.dat",  &
-                    "case.fix.dat",  mesh)
+    call read_domain("tests/solver/case.dom.dat", &
+                    "tests/solver/case.geo.dat",  &
+                    "tests/solver/case.fix.dat",  mesh)
 
     print*, "Mesh successfully loaded!"
     print*, "  - Number of Nodes: ", mesh % npoin
