@@ -2,7 +2,7 @@
         use iso_fortran_env
         use constants, only: ip, rp
         implicit none
-        public :: mesh_type, read_domain
+        public :: mesh_type, read_domain, local_elements
 
         !>----------------------------------------------------------------------
         !> Unified Mesh Type
@@ -143,7 +143,7 @@
                 stop
             end if
 
-            allocate(mesh%boundary(mesh%nboun))
+            allocate(mesh % boundary(mesh % nboun))
 
             ! Skip header
             read(30, '(A)', iostat=ios) line
@@ -155,5 +155,20 @@
 
             close(30)
         end subroutine read_fix_dat
+
+        !----------------------------------------------------------------------
+        ! Function: local_elements
+        ! Purpose : Returns the number of local elements by computing the size
+        !           of the first dimension of the connectivity array.
+        !----------------------------------------------------------------------
+        function local_elements(m) result(n)
+            type(mesh_type), intent(in) :: m
+            integer :: n
+            if (allocated(m % connectivity)) then
+                n = size(m % connectivity, 1)
+            else
+                n = 0
+            end if
+        end function local_elements
 
     end module mod_mesh

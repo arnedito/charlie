@@ -1,97 +1,49 @@
-    !-----------------------------------------------------------------
+    !**********************************************************************
     ! Module: mod_mpi
-    ! Purpose: Provides a wrapper for MPI initialization, finalization,
-    !          and basic synchronization. It defines global variables
-    !          to store the process rank, the number of processes, and
-    !          the global communicator.
-    !-----------------------------------------------------------------
+    !
+    ! Purpose:
+    !   This module provides a wrapper around basic MPI functionality such as
+    !   initialization, finalization, and barriers. It isolates MPI-specific
+    !   calls from the rest of the application.
+    !
+    ! Usage:
+    !   Call 'mpi_init_wrapper' at the start and 'mpi_finalize_wrapper' at
+    !   the end of your program. Other MPI utilities are also available.
+    !**********************************************************************
     module mod_mpi
         use mpi
-        use mod_partition,  only: partition_mesh
-        use mod_mesh,       only: mesh_type
         implicit none
-
-        ! Public entities accessible from other modules
         public :: mpi_init_wrapper, mpi_finalize_wrapper, mpi_barrier_wrapper
         public :: get_mpi_comm, mpirank, mpisize, mpi_comm_global
-        public :: distribute_mesh
 
-        ! Global communicator for all MPI processes (default: MPI_COMM_WORLD)
         integer :: mpi_comm_global = MPI_COMM_WORLD
-
-        ! Variables to store the rank (ID) of the current process and the total number of processes
         integer :: mpirank = -1
         integer :: mpisize = -1
-
-        ! Variable to capture MPI error codes for error checking
         integer :: mpierr
 
     contains
 
-        !-----------------------------------------------------------------
         subroutine mpi_init_wrapper()
-            !-------------------------------------------------------------
-            ! Purpose: Initializes the MPI environment.
-            !          - Calls MPI_Init to set up the MPI library.
-            !          - Retrieves the rank of the current process.
-            !          - Retrieves the total number of processes.
-            !          - Checks for errors during initialization and stops
-            !            execution if any error occurs.
-            !-------------------------------------------------------------
+            ! Initialize MPI and retrieve rank and size.
             call MPI_Init(mpierr)
-            if (mpierr /= MPI_SUCCESS) then
-                print *, "❌ Error initializing MPI!"
-                stop
-            end if
             call MPI_Comm_rank(MPI_COMM_WORLD, mpirank, mpierr)
             call MPI_Comm_size(MPI_COMM_WORLD, mpisize, mpierr)
-
         end subroutine mpi_init_wrapper
-        !-----------------------------------------------------------------
 
-        !-----------------------------------------------------------------
         subroutine mpi_finalize_wrapper()
-            !-------------------------------------------------------------
-            ! Purpose: Finalizes the MPI environment.
-            !          - Calls MPI_Finalize to properly shut down MPI.
-            !          - Checks for errors during finalization.
-            !-------------------------------------------------------------
+            ! Finalize the MPI environment.
             call MPI_Finalize(mpierr)
-            if (mpierr /= MPI_SUCCESS) then
-                print *, "❌ Error finalizing MPI!"
-            end if
         end subroutine mpi_finalize_wrapper
-        !-----------------------------------------------------------------
 
-        !-----------------------------------------------------------------
         subroutine mpi_barrier_wrapper()
-            !-------------------------------------------------------------
-            ! Purpose: Implements an MPI Barrier to synchronize processes.
-            !          - Ensures that all processes reach this point before
-            !            any of them can proceed.
-            !-------------------------------------------------------------
+            ! Perform a barrier synchronization among all processes.
             call MPI_Barrier(MPI_COMM_WORLD, mpierr)
         end subroutine mpi_barrier_wrapper
-        !-----------------------------------------------------------------
 
-        !-----------------------------------------------------------------
         function get_mpi_comm() result(comm)
-            !-------------------------------------------------------------
-            ! Purpose: Returns the global MPI communicator.
-            ! Returns:
-            !    comm - The global MPI communicator (typically MPI_COMM_WORLD)
-            !-------------------------------------------------------------
+            ! Return the global MPI communicator.
             integer :: comm
             comm = mpi_comm_global
         end function get_mpi_comm
-        !-----------------------------------------------------------------
-
-        !-----------------------------------------------------------------
-        subroutine distribute_mesh(mesh)
-             ! Distributes the mesh among MPI processes
-             type(mesh_type), intent(inout) :: mesh
-             call partition_mesh(mesh, mpirank, mpisize)
-        end subroutine distribute_mesh
-        !-----------------------------------------------------------------
 
     end module mod_mpi
