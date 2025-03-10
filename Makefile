@@ -1,6 +1,6 @@
 # Fortran Compiler
 FC = mpif90
-FLAGS = -O2 -J modules/ -I modules/
+FLAGS = -O2 -std=f2008 -Wall -Wextra -J modules/ -I modules/
 
 # Core Modules (Correct Compilation Order)
 MODULES = modules/constants.f90 modules/utils.f90 \
