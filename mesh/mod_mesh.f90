@@ -23,10 +23,10 @@ contains
     !> read_domain: Reads the mesh using user-provided file paths
     !>-----------------------------------------------------------------------
     subroutine read_domain(dom_filename, geo_filename, fix_filename, mesh)
-        character(len=*), intent(in) :: dom_filename, geo_filename, fix_filename
-        type(mesh_type), intent(out) :: mesh
-        character(len=256) :: line, dummy
-        integer(ip) :: ios
+        character(len=*), intent(in)            :: dom_filename, geo_filename, fix_filename
+        type(mesh_type), intent(out)            :: mesh
+        character(len=256)                      :: line, dummy
+        integer(ip)                             :: ios
 
         ! Debugging: Print the file paths
         print *, "Trying to open domain file: ", trim(dom_filename)
@@ -74,8 +74,8 @@ contains
     !> read_geo_dat: Reads node coordinates and element connectivity.
     !>-----------------------------------------------------------------------
     subroutine read_geo_dat(geo_filename, mesh)
-        character(len=*), intent(in) :: geo_filename
-        type(mesh_type), intent(inout) :: mesh
+        character(len=*), intent(in)            :: geo_filename
+        type(mesh_type), intent(inout)          :: mesh
         character(len=256) :: line
         integer(ip) :: ios, node_id, elem_id, n1, n2, n3
         logical :: inside_coords, inside_elems
@@ -132,7 +132,7 @@ contains
     !> read_fix_dat: Reads boundary conditions from fix file.
     !>-----------------------------------------------------------------------
     subroutine read_fix_dat(fix_filename, mesh)
-        character(len=*), intent(in) :: fix_filename
+        character(len=*), intent(in)   :: fix_filename
         type(mesh_type), intent(inout) :: mesh
         character(len=256) :: line
         integer(ip) :: ios, i, id, code

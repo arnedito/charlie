@@ -15,7 +15,8 @@
 module mod_partition
     use mod_mesh, only: mesh_type
     implicit none
-    public :: compute_partition
+
+    public :: compute_partition, compute_local_nodes
 
 contains
 
@@ -45,5 +46,34 @@ contains
             end_elem = mesh % nelem
         end if
     end subroutine compute_partition
+
+    !----------------------------------------------------------------------
+    ! Subroutine: compute_local_nodes
+    ! Purpose   : Computes the number of unique local nodes used in a partition.
+    !----------------------------------------------------------------------
+    subroutine compute_local_nodes(mesh, rank, nprocs, num_local_nodes)
+        type(mesh_type), intent(in)         :: mesh
+        integer, intent(in)                 :: rank, nprocs
+        integer, intent(out)                :: num_local_nodes
+        integer, allocatable                :: node_marker(:)
+        integer                             :: i, j, node, start_elem, end_elem
+
+        call compute_partition(mesh, rank, nprocs, start_elem, end_elem)
+
+        allocate(node_marker(mesh % npoin))
+        node_marker = 0
+
+        do i = start_elem, end_elem
+            do j = 1, size(mesh % connectivity, 2)
+                node = mesh % connectivity(i, j)
+                node_marker(node) = 1
+            end do
+        end do
+
+        num_local_nodes = sum(node_marker)
+
+        deallocate(node_marker)
+    end subroutine compute_local_nodes
+
 
 end module mod_partition
