@@ -155,7 +155,7 @@ contains
        character(len=*), intent(in)     :: geo_filename
        type(mesh_type), intent(inout)   :: mesh
        character(len=256)               :: line
-       integer(ip)                      :: ios, node_id, elem_id, n1, n2, n3
+       integer(ip)                      :: ios, inode, ielem, n1, n2, n3
        logical                          :: inside_coords, inside_elems
        real(rp)                         :: x, y, z
 
@@ -184,18 +184,18 @@ contains
           case default
              if (inside_coords) then
                 if (mesh%ndim == 2_ip) then
-                   read(line, *) node_id, x, y
-                   mesh%coords(node_id, 1) = x
-                   mesh%coords(node_id, 2) = y
+                   read(line, *) inode, x, y
+                   mesh%coords(inode, 1) = x
+                   mesh%coords(inode, 2) = y
                 else if (mesh%ndim == 3_ip) then
-                   read(line, *) node_id, x, y, z
-                   mesh%coords(node_id, 1) = x
-                   mesh%coords(node_id, 2) = y
-                   mesh%coords(node_id, 3) = z
+                   read(line, *) inode, x, y, z
+                   mesh%coords(inode, 1) = x
+                   mesh%coords(inode, 2) = y
+                   mesh%coords(inode, 3) = z
                 end if
              else if (inside_elems) then
-                read(line, *) elem_id, n1, n2, n3
-                mesh%connectivity(elem_id, :) = (/ n1, n2, n3 /)
+                read(line, *) ielem, n1, n2, n3
+                mesh%connectivity(ielem, :) = (/ n1, n2, n3 /)
              end if
           end select
        end do
