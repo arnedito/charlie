@@ -36,7 +36,7 @@ module mod_mesh
       integer(ip), allocatable    :: boundary(:)          ! Boundary conditions
    end type mesh_type
 
-   public :: mesh_type, read_domain, local_elements   ! local_elements presumably defined elsewhere?
+   public :: mesh_type, read_domain
 
 contains
 
@@ -132,7 +132,7 @@ contains
       ! Reading geometry and boundary data from files
       !-----------------------------------------------------------------------
       call read_geo_dat(geo_filename, mesh)
-      call read_fix_dat(fix_filename, mesh)  ! <--- Assuming you have a read_fix_dat subroutine
+      !call read_fix_dat(fix_filename, mesh)  ! <--- Assuming you have a read_fix_dat subroutine
     end subroutine read_domain
 
     !---------------------------------------------------------------------------
