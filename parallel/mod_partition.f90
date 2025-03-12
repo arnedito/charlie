@@ -1,79 +1,128 @@
-!**********************************************************************
-! Module: mod_partition
+!=============================================================================
+! @file   mod_partition.f90
+! @brief  Provides routines to partition mesh elements among MPI processes.
 !
-! Purpose:
-!   This module computes the partition indices for a mesh. It divides
-!   the mesh elements among the available processes. Note that this
-!   module does not perform any MPI communication to avoid circular
-!   dependencies.
+! @details
+!   This module divides the total number of elements in a mesh among multiple
+!   processes for parallel computations. The partition is currently performed
+!   by a simple block distribution: each rank gets a contiguous block of elements.
+!   It also offers a routine to compute how many unique nodal points belong to
+!   a given sub-partition (without doing any direct MPI communication).
 !
-! Usage:
-!   Call the subroutine 'compute_partition' with the mesh and MPI rank
-!   details to get the start and end element indices for the process.
-!**********************************************************************
-
+!   @note
+!   - This module does not perform MPI communications directly to avoid circular
+!     dependencies. MPI rank and size are passed in as arguments.
+!   - By default, leftover elements (if any) are all assigned to the last rank.
+!     More advanced partitioning strategies could distribute leftover elements
+!     more evenly.
+!
+!=============================================================================
 module mod_partition
-    use mod_mesh, only: mesh_type
-    implicit none
+   use constants, only: ip, rp
+   use mod_mesh, only: mesh_type
+   implicit none
 
-    public :: compute_partition, compute_local_nodes
+   !--------------------------------------------------------------------------
+   !> Public subroutines
+   !--------------------------------------------------------------------------
+   public :: compute_partition
+   public :: compute_local_nodes
 
 contains
 
-    subroutine compute_partition(mesh, rank, nprocs, start_elem, end_elem)
-        !------------------------------------------------------------------
-        ! Inputs:
-        !   mesh   - The mesh data structure containing the total number of elements.
-        !   rank   - The current process's rank.
-        !   nprocs - Total number of processes.
-        !
-        ! Outputs:
-        !   start_elem - The starting element index for this process.
-        !   end_elem   - The ending element index for this process.
-        !------------------------------------------------------------------
-        type(mesh_type), intent(in)         :: mesh
-        integer, intent(in)                 :: rank, nprocs
-        integer, intent(out)                :: start_elem, end_elem
-        integer                             :: num_local_elems
+   !---------------------------------------------------------------------------
+   !> @brief Compute the block-partition indices for a mesh among multiple ranks.
+   !>
+   !! Given the total number of elements (mesh%nelem) and the current rank
+   !! plus total process count, this subroutine calculates a contiguous block
+   !! of elements [start_elem, end_elem] for the local process.
+   !!
+   !! @param[in]  mesh       (mesh_type)  A mesh structure (read-only).
+   !! @param[in]  rank       (integer(ip)) Rank of the calling process.
+   !! @param[in]  nprocs     (integer(ip)) Total number of processes.
+   !! @param[out] start_elem (integer(ip)) The first element index assigned to this rank.
+   !! @param[out] end_elem   (integer(ip)) The last element index assigned to this rank.
+   !
+   !! @note
+   !!  - The last rank gets all leftover elements if nelem is not perfectly
+   !!    divisible by nprocs.
+   !---------------------------------------------------------------------------
+   subroutine compute_partition(mesh, rank, nprocs, start_elem, end_elem)
+      type(mesh_type), intent(in)  :: mesh
+      integer(ip), intent(in)      :: rank, nprocs
+      integer(ip), intent(out)     :: start_elem, end_elem
+      integer(ip)                  :: num_local_elems
 
-        ! Calculate the number of elements each process should get.
-        num_local_elems = mesh % nelem / nprocs
-        start_elem = rank * num_local_elems + 1
-        end_elem = start_elem + num_local_elems - 1
+      ! Number of elements per process (integer division)
+      num_local_elems = mesh%nelem / nprocs
 
-        ! If this is the last process, assign any remaining elements.
-        if (rank == nprocs - 1) then
-            end_elem = mesh % nelem
-        end if
-    end subroutine compute_partition
+      start_elem = rank * num_local_elems + 1_ip
+      end_elem   = start_elem + num_local_elems - 1_ip
 
-    !----------------------------------------------------------------------
-    ! Subroutine: compute_local_nodes
-    ! Purpose   : Computes the number of unique local nodes used in a partition.
-    !----------------------------------------------------------------------
-    subroutine compute_local_nodes(mesh, rank, nprocs, num_local_nodes)
-        type(mesh_type), intent(in)         :: mesh
-        integer, intent(in)                 :: rank, nprocs
-        integer, intent(out)                :: num_local_nodes
-        integer, allocatable                :: node_marker(:)
-        integer                             :: i, j, node, start_elem, end_elem
+      ! If this is the last process, take the remaining elements
+      if (rank == nprocs - 1_ip) then
+         end_elem = mesh%nelem
+      end if
 
-        call compute_partition(mesh, rank, nprocs, start_elem, end_elem)
+      ! Possible Improvement:
+      !   - If you want a more balanced approach for leftover elements, you
+      !     could distribute them among the first 'remainder' ranks instead
+      !     of dumping all on the last rank. For example:
+      !
+      !       remainder = mod(mesh%nelem, nprocs)
+      !       if (rank < remainder) then
+      !         ! each rank < remainder gets an extra element
+      !       end if
+      !
+   end subroutine compute_partition
 
-        allocate(node_marker(mesh % npoin))
-        node_marker = 0
+   !---------------------------------------------------------------------------
+   !> @brief Determines the number of unique local nodes for a given sub-partition.
+   !>
+   !! This subroutine first calls compute_partition to find the element range
+   !! [start_elem, end_elem] for a specific rank, then iterates through the
+   !! connectivity of those elements. A simple marker array (node_marker) is
+   !! used to count unique nodes.
+   !!
+   !! @param[in]  mesh            (mesh_type)  The global mesh (read-only).
+   !! @param[in]  rank            (integer(ip)) Rank of the calling process.
+   !! @param[in]  nprocs          (integer(ip)) Total number of processes.
+   !! @param[out] num_local_nodes (integer(ip)) The count of unique nodes in
+   !!                                            this rank's sub-partition.
+   !
+   !! @note
+   !!  - Because no actual MPI communication is done here, the "local nodes"
+   !!    concept is purely based on the block partition; real parallel codes
+   !!    would also need to gather or communicate node ownership across ranks.
+   !---------------------------------------------------------------------------
+   subroutine compute_local_nodes(mesh, rank, nprocs, num_local_nodes)
+      type(mesh_type), intent(in)   :: mesh
+      integer(ip), intent(in)       :: rank, nprocs
+      integer(ip), intent(out)      :: num_local_nodes
 
-        do i = start_elem, end_elem
-            do j = 1, size(mesh % connectivity, 2)
-                node = mesh % connectivity(i, j)
-                node_marker(node) = 1
-            end do
-        end do
+      integer(ip), allocatable      :: node_marker(:)
+      integer(ip)                   :: i, j
+      integer(ip)                   :: node
+      integer(ip)                   :: start_elem, end_elem
 
-        num_local_nodes = sum(node_marker)
+      ! Determine which elements this rank owns
+      call compute_partition(mesh, rank, nprocs, start_elem, end_elem)
 
-        deallocate(node_marker)
-    end subroutine compute_local_nodes
+      ! Mark array used to track which nodes are present
+      allocate(node_marker(mesh%npoin))
+      node_marker = 0_ip
 
+      do i = start_elem, end_elem
+         do j = 1_ip, size(mesh%connectivity, 2)
+            node = mesh%connectivity(i, j)
+            node_marker(node) = 1_ip
+         end do
+      end do
+
+      ! The sum of the marker array gives the count of unique nodes
+      num_local_nodes = sum(node_marker)
+
+      deallocate(node_marker)
+   end subroutine compute_local_nodes
 
 end module mod_partition
