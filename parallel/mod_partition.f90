@@ -27,6 +27,7 @@ module mod_partition
    !--------------------------------------------------------------------------
    public :: compute_partition
    public :: compute_local_nodes
+   public :: local_elements
 
 contains
 
