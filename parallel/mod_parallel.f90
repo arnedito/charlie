@@ -12,6 +12,7 @@
 !**********************************************************************
 module mod_parallel
     use mpi
+    use constants,          only: rp, ip
     use mod_partition,      only: compute_partition, compute_local_nodes
     use mod_mesh,           only: mesh_type
     implicit none
@@ -21,67 +22,61 @@ module mod_parallel
 contains
 
     subroutine distribute_mesh(mesh, rank, nprocs)
-        !------------------------------------------------------------------
-        ! Inputs/Outputs:
-        !   mesh   - The mesh structure. On rank 0, this contains the full mesh.
-        !            On other ranks, it will hold only the local partition.
-        !   rank   - The MPI rank of the calling process.
-        !   nprocs - Total number of MPI processes.
-        !------------------------------------------------------------------
         type(mesh_type), intent(inout)          :: mesh
-        integer, intent(in)                     :: rank, nprocs
-        integer                                 :: start_elem, end_elem, num_local_elems
-        integer                                 :: sendcount, i, ierr
-        integer                                 :: nnodes_per_elem, num_local_nodes
+        integer(ip), intent(in)                 :: rank, nprocs
+        integer(ip)                             :: start_elem, end_elem, num_local_elems
+        integer(ip)                             :: sendcount, i, ierr
+        integer(ip)                             :: nnodes_per_elem, num_local_nodes
+        integer(ip), allocatable                :: temp_connectivity(:,:), temp_send(:,:)
 
-        if (allocated(mesh % coords)) then
-            print*, "Rank ", rank, ": Deallocating existing mesh coordinates..."
-            deallocate(mesh % coords)
-        end if
-        if (allocated(mesh % connectivity)) then
-            print*, "Rank ", rank, ": Deallocating existing mesh connectivity..."
-            deallocate(mesh % connectivity)
-        end if
-        if (allocated(mesh % boundary)) then
-            print*, "Rank ", rank, ": Deallocating existing mesh boundaries..."
-            deallocate(mesh % boundary)
-        end if
-
-        ! Get the partition indices for the current process.
+        ! Compute partition indices for the current rank
         call compute_partition(mesh, rank, nprocs, start_elem, end_elem)
         num_local_elems = end_elem - start_elem + 1
 
+        ! Broadcast nnodes_per_elem to all ranks
         if (rank == 0) then
             nnodes_per_elem = size(mesh % connectivity, 2)
         end if
 
         call MPI_Bcast(nnodes_per_elem, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
 
-        ! Allocate space for the local connectivity data.
+        ! Allocate local mesh storage
         allocate(mesh % connectivity(num_local_elems, nnodes_per_elem))
 
         call compute_local_nodes(mesh, rank, nprocs, num_local_nodes)
-        allocate(mesh % coords(num_local_nodes, mesh % ndim))
 
+        allocate(mesh % coords(num_local_nodes, mesh % ndim))
         allocate(mesh % boundary(mesh % nboun))
 
-        print*, "Rank ", rank, ": Allocated local connectivity, coords, and boundary."
+        print*, "Rank ", rank, ": Allocated local connectivity, coordinates, and boundary."
 
-        ! If this is the root process, send out partitions to the others.
+        ! Root rank prepares connectivity data
+        if (rank == 0) then
+            allocate(temp_connectivity(size(mesh % connectivity, 1), size(mesh % connectivity, 2)))
+            temp_connectivity = mesh % connectivity
+        end if
+
+        ! Rank 0 sends partitions
         if (rank == 0) then
             do i = 1, nprocs - 1
                 call compute_partition(mesh, i, nprocs, start_elem, end_elem)
                 sendcount = (end_elem - start_elem + 1) * nnodes_per_elem
                 print*, "Rank 0 sending ", sendcount, " elements to rank ", i
 
-                call MPI_Send(mesh % connectivity(start_elem:end_elem, :), sendcount, MPI_INTEGER, i, 0, MPI_COMM_WORLD, ierr)
+                allocate(temp_send(end_elem - start_elem + 1, nnodes_per_elem))
+                temp_send = temp_connectivity(start_elem:end_elem, :)
+
+                call MPI_Send(temp_send, sendcount, MPI_INTEGER, i, 0, MPI_COMM_WORLD, ierr)
+
+                deallocate(temp_send)
             end do
+
+            deallocate(temp_connectivity)
         else
-            ! Non-root processes receive their partition.
+            ! Non-root ranks receive their partitions
             call receive_partition(mesh, rank, nprocs)
         end if
 
-        ! Ensure all processes synchronize before exiting
         call MPI_Barrier(MPI_COMM_WORLD, ierr)
 
     end subroutine distribute_mesh
@@ -96,9 +91,9 @@ contains
         ! This subroutine receives the partitioned mesh data from the root.
         !------------------------------------------------------------------
         type(mesh_type), intent(inout)          :: mesh
-        integer, intent(in)                     :: rank, nprocs
-        integer                                 :: num_local_elems, nnodes_per_elem, ierr
-        integer                                 :: start_elem, end_elem, num_local_nodes
+        integer(ip), intent(in)                 :: rank, nprocs
+        integer(ip)                             :: num_local_elems, nnodes_per_elem, ierr
+        integer(ip)                             :: start_elem, end_elem, num_local_nodes
 
         call compute_partition(mesh, rank, nprocs, start_elem, end_elem)
         num_local_elems = end_elem - start_elem + 1
