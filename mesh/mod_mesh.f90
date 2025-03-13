@@ -155,7 +155,7 @@ contains
        character(len=*), intent(in)     :: geo_filename
        type(mesh_type), intent(inout)   :: mesh
        character(len=256)               :: line
-       integer(ip)                      :: ios, inode, ielem, n1, n2, n3
+       integer(ip)                      :: ios, inode, ielem, n1, n2, n3, n4
        logical                          :: inside_coords, inside_elems
        real(rp)                         :: x, y, z
 
@@ -194,8 +194,18 @@ contains
                    mesh%coords(inode, 3) = z
                 end if
              else if (inside_elems) then
-                read(line, *) ielem, n1, n2, n3
-                mesh%connectivity(ielem, :) = (/ n1, n2, n3 /)
+                if (mesh%ndim == 2_ip) then
+                   ! Triangular elements (3 nodes)
+                   read(line, *) ielem, n1, n2, n3
+                   mesh%connectivity(ielem, :) = (/ n1, n2, n3 /)
+
+                else if (mesh%ndim == 3_ip) then
+                   ! Tetrahedral elements (4 nodes)
+                   integer(ip) :: n4
+                   read(line, *) ielem, n1, n2, n3, n4
+                   mesh%connectivity(ielem, :) = (/ n1, n2, n3, n4 /)
+
+                end if
              end if
           end select
        end do
