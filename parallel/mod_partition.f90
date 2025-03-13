@@ -47,7 +47,7 @@ contains
    !!  - The last rank gets all leftover elements if nelem is not perfectly
    !!    divisible by nprocs.
    !---------------------------------------------------------------------------
-   subroutine compute_partition(mesh, rank, nprocs, start_elem, end_elem)
+    subroutine compute_partition(mesh, rank, nprocs, start_elem, end_elem)
       type(mesh_type), intent(in)  :: mesh
       integer(ip), intent(in)      :: rank, nprocs
       integer(ip), intent(out)     :: start_elem, end_elem
@@ -124,5 +124,20 @@ contains
 
       deallocate(node_marker)
    end subroutine compute_local_nodes
+
+    !---------------------------------------------------------------------
+    !> @brief Returns the number of elements in mesh%connectivity
+    !!       (i.e., how many local elements are allocated).
+    !---------------------------------------------------------------------
+    function local_elements(mesh) result(nlocal)
+        type(mesh_type), intent(in) :: mesh
+        integer(ip)                 :: nlocal
+
+        if (.not. allocated(mesh%connectivity)) then
+            nlocal = 0_ip
+        else
+            nlocal = size(mesh%connectivity, 1)
+        end if
+    end function local_elements
 
 end module mod_partition
