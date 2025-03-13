@@ -201,7 +201,6 @@ contains
 
                 else if (mesh%ndim == 3_ip) then
                    ! Tetrahedral elements (4 nodes)
-                   integer(ip) :: n4
                    read(line, *) ielem, n1, n2, n3, n4
                    mesh%connectivity(ielem, :) = (/ n1, n2, n3, n4 /)
 
