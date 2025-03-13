@@ -3,6 +3,7 @@
 *.mod
 *.exe
 *.out
+*.dSYM
 
 # Temporary files
 *~

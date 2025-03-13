@@ -1,6 +1,7 @@
 # Fortran Compiler
 FC = mpif90
-FLAGS = -O2 -std=f2008 -Wall -Wextra -J modules/ -I modules/
+FLAGS = -O2 -std=f2008 -Wall -Wextra -g -fcheck=all -fbounds-check -fbacktrace -J modules/ -I modules/
+FLAGS += -Wimplicit-interface -Wsurprising -Wconversion -Warray-temporaries
 
 # Core Modules (Correct Compilation Order)
 MODULES = modules/constants.f90 modules/utils.f90 \
@@ -88,3 +89,4 @@ test_solver:
 # Clean rule to remove object files, modules, and executables.
 clean:
 	rm -f modules/*.o modules/*.mod $(EXE_MPI) $(EXE_MESH_2D) $(EXE_MESH_3D) $(EXE_SOLVER) $(EXE_PARTITION)
+	rm -rf *.o *.mod *.dSYM tests/parallel/*.dSYM tests/mesh/*.dSYM tests/solver/*.dSYM
