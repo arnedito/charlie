@@ -1,79 +1,130 @@
+!=============================================================================
+! @file   mod_solver.f90
+! @brief  Provides local assembly and a basic solver for a finite element problem.
+!
+! @details
+!   - assemble_system(mesh, A_local, b_local):
+!       Loops over local elements (mesh%connectivity) to compute element-level
+!       matrices/vectors, then assembles them into A_local and b_local.
+!   - solve_newton(mesh, A_local, b_local, x_local):
+!       A placeholder routine demonstrating how you'd proceed with a solver.
+!   - compute_element_matrices(mesh, iel, ke, fe):
+!       Dummy element routine that sets diagonal values and a simple force vector.
+!
+!=============================================================================
 module mod_solver
-    use constants
-    use mod_mesh
-    use utils
-    implicit none
-    public :: assemble_system, solve_newton, time_integration
+   use constants,    only: ip, rp
+   use mod_mesh,     only: mesh_type
+   implicit none
 
+   public :: assemble_system
+   public :: solve_newton
 
 contains
 
-    ! Assemble the system matrix A and right-hand side vector b.
-    subroutine assemble_system(mesh, sol, A, b)
-        type(mesh_type), intent(in)         :: mesh
-        real(rp), intent(in)                :: sol(:)
-        real(rp), allocatable, intent(out)  :: A(:,:), b(:)
-        integer(ip) :: n
-
-        ! Initialize problem size
-        n = mesh % npoin
-
-        ! Allocate system matrix and right-hand side vector
-        if (.not. allocated(A)) allocate(A(n, n))
-        if (.not. allocated(b)) allocate(b(n))
-
-        ! Dummy initialization (Replace with actual system assembly)
-        A = 0.0_rp
-        b = 0.0_rp
-
-    end subroutine assemble_system
-
-
-    ! A simple Newton solver to update the solution state.
+    !---------------------------------------------------------------------------
+    !> @brief Assembles the local system matrix (A_local) and RHS vector (b_local)
+    !>        for each MPI rank based on the local mesh data.
     !
-    subroutine solve_newton(mesh, sol, dt)
-        type(mesh_type), intent(in)         :: mesh
-        real(rp), intent(inout)             :: sol(:)
-        real(rp), intent(in)                :: dt
-        integer                             :: n, newton_iter
-        real(rp)                            :: res_norm, tol
-        real(rp), allocatable               :: A(:,:), b(:), x(:)
+    !! - mesh: Partitioned mesh structure, containing local or full elements
+    !! - A_local: The system matrix, dimension (npoin x npoin)
+    !! - b_local: The RHS vector, dimension (npoin)
+    !---------------------------------------------------------------------------
+    subroutine assemble_system(mesh, A_local, b_local)
+        type(mesh_type), intent(in)               :: mesh
+        real(rp), allocatable, intent(inout)      :: A_local(:,:), b_local(:)
+        integer(ip)                               :: iel, i, j
+        integer(ip)                               :: ndof
+        integer(ip), allocatable                  :: e_dof(:)
+        real(rp), allocatable                     :: ke(:,:), fe(:)
 
-        n = size(sol)
-        tol = 1.0e-6_rp
-        newton_iter = 0_ip
-        res_norm = 1.0_rp
+        ! Determine number of nodes per element (2D tri -> 3, 3D tet -> 4)
+        ndof = mesh%ndim + 1
 
-        do while (res_norm > tol .and. newton_iter < 10_ip)
-                call assemble_system(mesh, sol, A, b)
-                ! For demonstration, solve A * x = b (here, A is identity, so x = b).
-                allocate(x(n))
-                x = b
-                sol = sol - x   ! Update solution with Newton correction
-                res_norm = norm(x, n)
-                newton_iter = newton_iter + 1
-                print*, 'Newton iteration:', newton_iter, ' Residual norm:', res_norm
-                deallocate(x)
+        ! Temporary arrays for local element computations
+        allocate(e_dof(ndof))
+        allocate(ke(ndof, ndof))
+        allocate(fe(ndof))
+
+        ! Loop over local elements
+        do iel = 1, size(mesh%connectivity, 1)
+
+            ! e_dof: the global DOF (node) indices for this element
+            e_dof = mesh%connectivity(iel, :)
+
+            ! Compute local ke, fe
+            call compute_element_matrices(mesh, iel, ke, fe)
+
+            ! Assemble ke, fe into A_local, b_local
+            do i = 1, ndof
+            do j = 1, ndof
+                A_local(e_dof(i), e_dof(j)) = A_local(e_dof(i), e_dof(j)) + ke(i,j)
+            end do
+            b_local(e_dof(i)) = b_local(e_dof(i)) + fe(i)
             end do
 
-        deallocate(A, b)
-    end subroutine solve_newton
-
-    ! Time integration routine using BDF2 or Trapezoidal rule.
-    subroutine time_integration(mesh, sol, dt, nsteps)
-
-        type(mesh_type), intent(in)         :: mesh
-        real(rp), intent(inout)             :: sol(:)
-        real(rp), intent(in)                :: dt
-        integer, intent(in)                 :: nsteps
-        integer                             :: step
-
-        do step = 1, nsteps
-            print*, 'Time step ', step, ' dt = ', dt
-            ! Call the Newton solver to update the solution state.
-            call solve_newton(mesh, sol, dt)
         end do
 
-    end subroutine time_integration
+        deallocate(e_dof, ke, fe)
+    end subroutine assemble_system
+
+    !---------------------------------------------------------------------------
+    !> @brief A placeholder routine demonstrating Newton's method structure.
+    !>
+    !! - mesh: The mesh data (not strictly used here).
+    !! - A_local: The local system matrix built from assemble_system().
+    !! - b_local: The local RHS vector.
+    !! - x_local: The solution vector (allocated to npoin).
+    !---------------------------------------------------------------------------
+    subroutine solve_newton(mesh, A_local, b_local, x_local)
+        type(mesh_type), intent(in)             :: mesh
+        real(rp), allocatable, intent(inout)    :: A_local(:,:), b_local(:), x_local(:)
+
+        ! Just a debug print for now
+        print *, "solve_newton: First row of A_local => ", A_local(1, :)
+        print *, "solve_newton: First entries of b_local =>", b_local(1: min(5, size(b_local)))
+        print *, "solve_newton: (Placeholder) Setting x_local = 0"
+        x_local = 0.0_rp
+
+        ! Real code will:
+        ! 1) Apply boundary conditions
+        ! 2) Solve A_local * x_local = b_local (iterative or direct)
+        ! 3) Update x_local
+    end subroutine solve_newton
+
+    !---------------------------------------------------------------------------
+    !> @brief Computes element-level stiffness (ke) and force (fe).
+    !
+    !! - mesh : local or global mesh data if needed for shape function integrals
+    !! - iel  : which element index in mesh%connectivity
+    !! - ke   : ndof x ndof matrix (3x3 for tri, 4x4 for tet)
+    !! - fe   : ndof array
+    !---------------------------------------------------------------------------
+    subroutine compute_element_matrices(mesh, iel, ke, fe)
+        type(mesh_type), intent(in)             :: mesh
+        integer(ip), intent(in)                 :: iel
+        real(rp), intent(out)                   :: ke(:,:), fe(:)
+        integer(ip)                             :: ndof, i, j
+
+        ndof = size(ke, 1)  ! 3 for tri, 4 for tet (linear)
+
+        ! Zero them first
+        do i = 1, ndof
+            fe(i) = 0.0_rp
+        end do
+
+        do i = 1, ndof
+            do j = 1, ndof
+            ke(i, j) = 0.0_rp
+            end do
+        end do
+
+        ! Example diagonal
+        do i = 1, ndof
+            ke(i, i) = 1.0_rp
+            fe(i)    = real(i, rp)
+        end do
+
+    end subroutine compute_element_matrices
 
 end module mod_solver

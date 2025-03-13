@@ -15,21 +15,26 @@ MODULES = modules/constants.f90 modules/utils.f90 \
 OBJ = $(patsubst %.f90, modules/%.o, $(notdir $(MODULES)))
 
 # Test files
-TEST_MPI         = tests/parallel/test_mpi.f90
-TEST_MESH_2D     = tests/mesh/read_mesh_files/test_read_mesh.f90
-TEST_MESH_3D     = tests/mesh/read_mesh_3d/test_read_mesh_3d.f90
-TEST_SOLVER      = tests/solver/test_solver.f90
-TEST_PARTITION   = tests/parallel/test_mesh_partition.f90
+TEST_MPI               = tests/parallel/test_mpi.f90
+TEST_MESH_2D           = tests/mesh/read_mesh_files/test_read_mesh.f90
+TEST_MESH_3D           = tests/mesh/read_mesh_3d/test_read_mesh_3d.f90
+TEST_SOLVER            = tests/solver/test_solver.f90
+TEST_PARTITION         = tests/parallel/test_mesh_partition.f90
+TEST_ASSEMBLE_2D_MPI   = tests/solver/test_assemble_2d_mpi.f90
+TEST_ASSEMBLE_3D_MPI   = tests/solver/test_assemble_3d_mpi.f90
 
 # Executables
-EXE_MPI         = tests/parallel/test_mpi
-EXE_MESH_2D     = tests/mesh/read_mesh_files/test_read_mesh
-EXE_MESH_3D     = tests/mesh/read_mesh_3d/test_read_mesh_3d
-EXE_SOLVER      = tests/solver/test_solver
-EXE_PARTITION   = tests/parallel/test_mesh_partition
+EXE_MPI                = tests/parallel/test_mpi
+EXE_MESH_2D            = tests/mesh/read_mesh_files/test_read_mesh
+EXE_MESH_3D            = tests/mesh/read_mesh_3d/test_read_mesh_3d
+EXE_SOLVER             = tests/solver/test_solver
+EXE_PARTITION          = tests/parallel/test_mesh_partition
+EXE_ASSEMBLE_2D_MPI    = tests/solver/test_assemble_2d_mpi
+EXE_ASSEMBLE_3D_MPI    = tests/solver/test_assemble_3d_mpi
 
 # Default rule: compile all test executables.
-all: $(EXE_MPI) $(EXE_MESH_2D) $(EXE_MESH_3D) $(EXE_SOLVER) $(EXE_PARTITION)
+all: $(EXE_MPI) $(EXE_MESH_2D) $(EXE_MESH_3D) $(EXE_SOLVER) $(EXE_PARTITION) \
+     $(EXE_ASSEMBLE_2D_MPI) $(EXE_ASSEMBLE_3D_MPI)
 
 # Compile core modules
 modules/constants.o: modules/constants.f90
@@ -69,12 +74,25 @@ $(EXE_SOLVER): $(OBJ) $(TEST_SOLVER)
 $(EXE_PARTITION): $(OBJ) $(TEST_PARTITION)
 	$(FC) $(FLAGS) -o $@ $(TEST_PARTITION) $(OBJ)
 
+# New linking rules for the 2D/3D assembly tests
+$(EXE_ASSEMBLE_2D_MPI): $(OBJ) $(TEST_ASSEMBLE_2D_MPI)
+	$(FC) $(FLAGS) -o $@ $(TEST_ASSEMBLE_2D_MPI) $(OBJ)
+
+$(EXE_ASSEMBLE_3D_MPI): $(OBJ) $(TEST_ASSEMBLE_3D_MPI)
+	$(FC) $(FLAGS) -o $@ $(TEST_ASSEMBLE_3D_MPI) $(OBJ)
+
 # Targets for running the tests with MPI.
 test_mpi:
 	mpirun -np 4 $(EXE_MPI)
 
 test_partition:
 	mpirun -np 4 $(EXE_PARTITION)
+
+test_assemble_2d_mpi:
+	mpirun -np 4 $(EXE_ASSEMBLE_2D_MPI)
+
+test_assemble_3d_mpi:
+	mpirun -np 4 $(EXE_ASSEMBLE_3D_MPI)
 
 # Other test targets for mesh and solver
 test_mesh_2d:
@@ -88,5 +106,7 @@ test_solver:
 
 # Clean rule to remove object files, modules, and executables.
 clean:
-	rm -f modules/*.o modules/*.mod $(EXE_MPI) $(EXE_MESH_2D) $(EXE_MESH_3D) $(EXE_SOLVER) $(EXE_PARTITION)
+	rm -f modules/*.o modules/*.mod \
+	      $(EXE_MPI) $(EXE_MESH_2D) $(EXE_MESH_3D) $(EXE_SOLVER) \
+	      $(EXE_PARTITION) $(EXE_ASSEMBLE_2D_MPI) $(EXE_ASSEMBLE_3D_MPI)
 	rm -rf *.o *.mod *.dSYM tests/parallel/*.dSYM tests/mesh/*.dSYM tests/solver/*.dSYM
