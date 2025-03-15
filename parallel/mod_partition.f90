@@ -114,8 +114,8 @@ contains
       node_marker = 0_ip
 
       do i = start_elem, end_elem
-         do j = 1_ip, size(mesh%connectivity, 2)
-            node = mesh%connectivity(i, j)
+         do j = 1_ip, size(mesh%lnods, 1)
+            node = mesh%lnods(j, i)
             node_marker(node) = 1_ip
          end do
       end do
@@ -127,17 +127,17 @@ contains
    end subroutine compute_local_nodes
 
     !---------------------------------------------------------------------
-    !> @brief Returns the number of elements in mesh%connectivity
+    !> @brief Returns the number of elements in mesh%lnods
     !!       (i.e., how many local elements are allocated).
     !---------------------------------------------------------------------
     function local_elements(mesh) result(nlocal)
         type(mesh_type), intent(in) :: mesh
         integer(ip)                 :: nlocal
 
-        if (.not. allocated(mesh%connectivity)) then
+        if (.not. allocated(mesh%lnods)) then
             nlocal = 0_ip
         else
-            nlocal = size(mesh%connectivity, 1)
+            nlocal = size(mesh%lnods, 2)
         end if
     end function local_elements
 

@@ -85,7 +85,7 @@ contains
 
                ! Copy the chunk from the big global connectivity
                do i = 1, n_elems
-                  tmp(i,:) = mesh%connectivity(s_elem + i - 1_ip, :)
+                  tmp(i,:) = mesh%lnods(:, s_elem + i - 1_ip)
                end do
 
                ! Send to rank r
@@ -109,21 +109,21 @@ contains
             allocate(tmp(num_local_elems, mesh%ndim+1_ip))
 
             do i = 1_ip, num_local_elems
-               tmp(i,:) = mesh%connectivity(start_elem + i - 1_ip, :)
+               tmp(i,:) = mesh%lnods(:, start_elem + i - 1_ip)
             end do
 
             ! Deallocate the original big array
-            if (allocated(mesh%connectivity)) deallocate(mesh%connectivity)
+            if (allocated(mesh%lnods)) deallocate(mesh%lnods)
 
             ! Reallocate for local portion
-            allocate(mesh%connectivity(num_local_elems, mesh%ndim+1_ip))
+            allocate(mesh%lnods(mesh%ndim+1_ip, num_local_elems))
 
             ! Copy from tmp
-            mesh%connectivity = tmp
+            mesh%lnods = tmp
             deallocate(tmp)
          else
             ! If no local elems, just deallocate everything
-            if (allocated(mesh%connectivity)) deallocate(mesh%connectivity)
+            if (allocated(mesh%lnods)) deallocate(mesh%lnods)
          end if
 
       else
@@ -133,12 +133,12 @@ contains
          !  - Allocate local connectivity for our share.
          !  - Receive the sub-block from Rank 0.
          !-------------------------------------------------------------
-         if (allocated(mesh%connectivity)) deallocate(mesh%connectivity)
+         if (allocated(mesh%lnods)) deallocate(mesh%lnods)
 
          if (num_local_elems > 0_ip) then
-            allocate(mesh%connectivity(num_local_elems, mesh%ndim+1_ip))
+            allocate(mesh%lnods(mesh%ndim+1_ip, num_local_elems))
             recv_count = num_local_elems * (mesh%ndim+1_ip)
-            call MPI_Recv(mesh%connectivity, recv_count, MPI_INTEGER, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE, ierr)
+            call MPI_Recv(mesh%lnods, recv_count, MPI_INTEGER, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE, ierr)
          end if
       end if
 

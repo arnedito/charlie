@@ -43,7 +43,7 @@ program test_mesh_partition
                        "tests/mesh/read_mesh_files/case.geo.dat", &
                        "tests/mesh/read_mesh_files/case.fix.dat", &
                        mesh)
-      ! At this point, rank 0 has a big mesh%connectivity of size (nelem, ndim+1).
+      ! At this point, rank 0 has a big mesh%lnods of size (nelem, ndim+1).
    end if
 
    !-------------------------------------------------------------------------
@@ -77,7 +77,7 @@ program test_mesh_partition
    !-------------------------------------------------------------------------
    !> Each rank now has a local connectivity array. Let's see how many we have.
    !-------------------------------------------------------------------------
-   if (allocated(mesh%connectivity)) then
+   if (allocated(mesh%lnods)) then
       total_local_elems = local_elements(mesh)
    else
       total_local_elems = 0_ip
@@ -109,8 +109,8 @@ program test_mesh_partition
    !-------------------------------------------------------------------------
    !> Optionally, print first element's connectivity on each rank
    !-------------------------------------------------------------------------
-   if (total_local_elems > 0_ip .and. allocated(mesh%connectivity)) then
-      print *, 'Rank', rank, 'first local element:', mesh%connectivity(1, :)
+   if (total_local_elems > 0_ip .and. allocated(mesh%lnods)) then
+      print *, 'Rank', rank, 'first local element:', mesh%lnods(:, 1)
    else
       print *, 'Rank', rank, ': No elements to print.'
    end if

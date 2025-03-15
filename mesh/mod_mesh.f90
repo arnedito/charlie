@@ -22,7 +22,7 @@ module mod_mesh
    !! - nelem : Number of elements in the domain.
    !! - nboun : Number of boundary entities (e.g. edges or faces).
    !! - coords: Allocatable array holding nodal coordinates of size (npoin, ndim).
-   !! - connectivity: Allocatable array of element connectivity of size (nelem, ?).
+   !! - lnods : Allocatable array of element connectivity of size (nelem, ?).
    !! - boundary    : Allocatable array describing boundary conditions or boundary
    !!                 element references.
    !---------------------------------------------------------------------------
@@ -32,7 +32,7 @@ module mod_mesh
       integer(ip)                 :: nelem                ! Number of elements
       integer(ip)                 :: nboun                ! Number of boundary elements
       real(rp), allocatable       :: coords(:,:)          ! Nodal coordinates
-      integer(ip), allocatable    :: connectivity(:,:)    ! Element connectivity
+      integer(ip), allocatable    :: lnods(:,:)           ! Element connectivity
       integer(ip), allocatable    :: boundary(:)          ! Boundary conditions
    end type mesh_type
 
@@ -118,9 +118,9 @@ contains
       !     allocate connectivity appropriately (e.g., 4 for quads, 8 for hex,
       !     etc.).
       !-----------------------------------------------------------------------
-      if (.not. allocated(mesh%connectivity)) then
-         allocate(mesh%connectivity(mesh%nelem, mesh%ndim + 1))
-         print*, "Allocated mesh connectivity: ", mesh%nelem, " x ", mesh%ndim + 1
+      if (.not. allocated(mesh%lnods)) then
+         allocate(mesh%lnods(mesh%ndim + 1, mesh%nelem))
+         print*, "Allocated mesh connectivity: ", mesh%ndim + 1, " x ", mesh%nelem
       end if
 
       if (.not. allocated(mesh%boundary)) then
@@ -197,12 +197,12 @@ contains
                 if (mesh%ndim == 2_ip) then
                    ! Triangular elements (3 nodes)
                    read(line, *) ielem, n1, n2, n3
-                   mesh%connectivity(ielem, :) = (/ n1, n2, n3 /)
+                   mesh%lnods(:, ielem) = (/ n1, n2, n3 /)
 
                 else if (mesh%ndim == 3_ip) then
                    ! Tetrahedral elements (4 nodes)
                    read(line, *) ielem, n1, n2, n3, n4
-                   mesh%connectivity(ielem, :) = (/ n1, n2, n3, n4 /)
+                   mesh%lnods(:, ielem) = (/ n1, n2, n3, n4 /)
 
                 end if
              end if

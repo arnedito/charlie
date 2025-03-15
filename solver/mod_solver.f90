@@ -4,7 +4,7 @@
 !
 ! @details
 !   - assemble_system(mesh, A_local, b_local):
-!       Loops over local elements (mesh%connectivity) to compute element-level
+!       Loops over local elements (mesh%lnods) to compute element-level
 !       matrices/vectors, then assembles them into A_local and b_local.
 !   - solve_newton(mesh, A_local, b_local, x_local):
 !       A placeholder routine demonstrating how you'd proceed with a solver.
@@ -47,10 +47,10 @@ contains
         allocate(fe(ndof))
 
         ! Loop over local elements
-        do iel = 1, size(mesh%connectivity, 1)
+        do iel = 1, size(mesh%lnods, 2)
 
             ! e_dof: the global DOF (node) indices for this element
-            e_dof = mesh%connectivity(iel, :)
+            e_dof = mesh%lnods(:, iel)
 
             ! Compute local ke, fe
             call compute_element_matrices(mesh, iel, ke, fe)
@@ -96,7 +96,7 @@ contains
     !> @brief Computes element-level stiffness (ke) and force (fe).
     !
     !! - mesh : local or global mesh data if needed for shape function integrals
-    !! - iel  : which element index in mesh%connectivity
+    !! - iel  : which element index in mesh%lnods
     !! - ke   : ndof x ndof matrix (3x3 for tri, 4x4 for tet)
     !! - fe   : ndof array
     !---------------------------------------------------------------------------
