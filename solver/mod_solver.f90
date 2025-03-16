@@ -33,39 +33,42 @@ contains
     !! - b_local: The RHS vector, dimension (npoin)
     !---------------------------------------------------------------------------
     subroutine assemble_system(mesh, A_local, b_local)
+        use mpi
+        use mod_mpi,      only: mpi_comm_global
+        use constants,    only: ip, rp
+        use mod_mesh,     only: mesh_type
+        implicit none
+
         type(mesh_type), intent(in)               :: mesh
         real(rp), allocatable, intent(inout)      :: A_local(:,:), b_local(:)
         integer(ip)                               :: iel, i, j
-        integer(ip)                               :: ndof
+        integer(ip)                               :: ndof, ierr
         integer(ip), allocatable                  :: e_dof(:)
         real(rp), allocatable                     :: ke(:,:), fe(:)
+        real(rp), allocatable                     :: A_global(:,:), b_global(:)
 
         ! Determine number of nodes per element (2D tri -> 3, 3D tet -> 4)
         ndof = mesh%ndim + 1
 
-        ! Temporary arrays for local element computations
-        allocate(e_dof(ndof))
-        allocate(ke(ndof, ndof))
-        allocate(fe(ndof))
+        ! Allocate local temporary arrays
+        allocate(e_dof(ndof), ke(ndof, ndof), fe(ndof))
 
-        ! Loop over local elements
+        ! Initialize local system matrices to zero
+        A_local = 0.0_rp
+        b_local = 0.0_rp
+
+        ! -------------------------------------------------------------------------
+        ! Step 1: Each MPI rank computes local contributions independently
+        !-----------------------------------------------------------------------
         do iel = 1, size(mesh%lnods, 2)
 
-            ! e_dof: the global DOF (node) indices for this element
+            ! Extract global DOF indices for this element
             e_dof = mesh%lnods(:, iel)
 
-            ! Debugging print to check for zero or invalid indices
-            do i = 1, ndof
-                if (e_dof(i) < 1 .or. e_dof(i) > size(A_local, 1)) then
-                    print *, "Error: e_dof(i) out of bounds! Rank", mpirank, "Element", iel, "e_dof(", i, ") =", e_dof(i)
-                    stop "Invalid index in e_dof!"
-                end if
-            end do
-
-            ! Compute local ke, fe
+            ! Compute local element stiffness and force
             call compute_element_matrices(mesh, iel, ke, fe)
 
-            ! Assemble ke, fe into A_local, b_local
+            ! Assemble element matrices into local A_local and b_local
             do i = 1, ndof
                 do j = 1, ndof
                     A_local(e_dof(i), e_dof(j)) = A_local(e_dof(i), e_dof(j)) + ke(i,j)
@@ -75,9 +78,31 @@ contains
 
         end do
 
+        ! -------------------------------------------------------------------------
+        !  MPI PARALLEL ASSEMBLY (SUMMATION OF LOCAL CONTRIBUTIONS)
+        ! -------------------------------------------------------------------------
 
-        deallocate(e_dof, ke, fe)
+        ! Allocate temporary global arrays for the MPI reduction
+        allocate(A_global(size(A_local,1), size(A_local,2)))
+        allocate(b_global(size(b_local)))
+
+        ! Initialize the global arrays
+        A_global = 0.0_rp
+        b_global = 0.0_rp
+
+        ! Perform MPI_Allreduce to sum all local contributions into global arrays
+        call MPI_Allreduce(A_local, A_global, size(A_local), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_comm_global, ierr)
+        call MPI_Allreduce(b_local, b_global, size(b_local), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_comm_global, ierr)
+
+        ! Copy reduced global results back into A_local and b_local
+        A_local = A_global
+        b_local = b_global
+
+        ! Deallocate temporary arrays
+        deallocate(A_global, b_global, e_dof, ke, fe)
+
     end subroutine assemble_system
+
 
     !---------------------------------------------------------------------------
     !> @brief A placeholder routine demonstrating Newton's method structure.
