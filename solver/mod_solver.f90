@@ -13,12 +13,14 @@
 !
 !=============================================================================
 module mod_solver
-   use constants,    only: ip, rp
-   use mod_mesh,     only: mesh_type
-   implicit none
+    use mpi
+    use mod_mpi,      only: mpirank
+    use constants,    only: ip, rp
+    use mod_mesh,     only: mesh_type
+    implicit none
 
-   public :: assemble_system
-   public :: solve_newton
+    public :: assemble_system
+    public :: solve_newton
 
 contains
 
@@ -52,18 +54,27 @@ contains
             ! e_dof: the global DOF (node) indices for this element
             e_dof = mesh%lnods(:, iel)
 
+            ! Debugging print to check for zero or invalid indices
+            do i = 1, ndof
+                if (e_dof(i) < 1 .or. e_dof(i) > size(A_local, 1)) then
+                    print *, "Error: e_dof(i) out of bounds! Rank", mpirank, "Element", iel, "e_dof(", i, ") =", e_dof(i)
+                    stop "Invalid index in e_dof!"
+                end if
+            end do
+
             ! Compute local ke, fe
             call compute_element_matrices(mesh, iel, ke, fe)
 
             ! Assemble ke, fe into A_local, b_local
             do i = 1, ndof
-            do j = 1, ndof
-                A_local(e_dof(i), e_dof(j)) = A_local(e_dof(i), e_dof(j)) + ke(i,j)
-            end do
-            b_local(e_dof(i)) = b_local(e_dof(i)) + fe(i)
+                do j = 1, ndof
+                    A_local(e_dof(i), e_dof(j)) = A_local(e_dof(i), e_dof(j)) + ke(i,j)
+                end do
+                b_local(e_dof(i)) = b_local(e_dof(i)) + fe(i)
             end do
 
         end do
+
 
         deallocate(e_dof, ke, fe)
     end subroutine assemble_system
@@ -115,7 +126,7 @@ contains
 
         do i = 1, ndof
             do j = 1, ndof
-            ke(i, j) = 0.0_rp
+                ke(i, j) = 0.0_rp
             end do
         end do
 

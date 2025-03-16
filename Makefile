@@ -19,7 +19,8 @@ TEST_MPI               = tests/parallel/test_mpi.f90
 TEST_MESH_2D           = tests/mesh/read_mesh_files/test_read_mesh.f90
 TEST_MESH_3D           = tests/mesh/read_mesh_3d/test_read_mesh_3d.f90
 TEST_SOLVER            = tests/solver/test_solver.f90
-TEST_PARTITION         = tests/parallel/test_mesh_partition.f90
+TEST_PARTITION_2D      = tests/parallel/test_mesh_partition.f90
+TEST_PARTITION_3D      = tests/parallel/test_mesh_partition_3d.f90
 TEST_ASSEMBLE_2D_MPI   = tests/solver/test_assemble_2d_mpi.f90
 TEST_ASSEMBLE_3D_MPI   = tests/solver/test_assemble_3d_mpi.f90
 
@@ -28,12 +29,13 @@ EXE_MPI                = tests/parallel/test_mpi
 EXE_MESH_2D            = tests/mesh/read_mesh_files/test_read_mesh
 EXE_MESH_3D            = tests/mesh/read_mesh_3d/test_read_mesh_3d
 EXE_SOLVER             = tests/solver/test_solver
-EXE_PARTITION          = tests/parallel/test_mesh_partition
+EXE_PARTITION_2D       = tests/parallel/test_mesh_partition
+EXE_PARTITION_3D       = tests/parallel/test_mesh_partition_3d
 EXE_ASSEMBLE_2D_MPI    = tests/solver/test_assemble_2d_mpi
 EXE_ASSEMBLE_3D_MPI    = tests/solver/test_assemble_3d_mpi
 
 # Default rule: compile all test executables.
-all: $(EXE_MPI) $(EXE_MESH_2D) $(EXE_MESH_3D) $(EXE_SOLVER) $(EXE_PARTITION) \
+all: $(EXE_MPI) $(EXE_MESH_2D) $(EXE_MESH_3D) $(EXE_SOLVER) $(EXE_PARTITION_2D) $(EXE_PARTITION_3D) \
      $(EXE_ASSEMBLE_2D_MPI) $(EXE_ASSEMBLE_3D_MPI)
 
 # Compile core modules
@@ -71,8 +73,11 @@ $(EXE_MESH_3D): $(OBJ) $(TEST_MESH_3D)
 $(EXE_SOLVER): $(OBJ) $(TEST_SOLVER)
 	$(FC) $(FLAGS) -o $@ $(TEST_SOLVER) $(OBJ)
 
-$(EXE_PARTITION): $(OBJ) $(TEST_PARTITION)
-	$(FC) $(FLAGS) -o $@ $(TEST_PARTITION) $(OBJ)
+$(EXE_PARTITION_2D): $(OBJ) $(TEST_PARTITION_2D)
+	$(FC) $(FLAGS) -o $@ $(TEST_PARTITION_2D) $(OBJ)
+
+$(EXE_PARTITION_3D): $(OBJ) $(TEST_PARTITION_3D)
+	$(FC) $(FLAGS) -o $@ $(TEST_PARTITION_3D) $(OBJ)
 
 # New linking rules for the 2D/3D assembly tests
 $(EXE_ASSEMBLE_2D_MPI): $(OBJ) $(TEST_ASSEMBLE_2D_MPI)
@@ -85,8 +90,11 @@ $(EXE_ASSEMBLE_3D_MPI): $(OBJ) $(TEST_ASSEMBLE_3D_MPI)
 test_mpi:
 	mpirun -np 4 $(EXE_MPI)
 
-test_partition:
-	mpirun -np 4 $(EXE_PARTITION)
+test_partition_2d:
+	mpirun -np 4 $(EXE_PARTITION_2D)
+
+test_partition_3d:
+	mpirun -np 4 $(EXE_PARTITION_3D)
 
 test_assemble_2d_mpi:
 	mpirun -np 4 $(EXE_ASSEMBLE_2D_MPI)
@@ -108,5 +116,5 @@ test_solver:
 clean:
 	rm -f modules/*.o modules/*.mod \
 	      $(EXE_MPI) $(EXE_MESH_2D) $(EXE_MESH_3D) $(EXE_SOLVER) \
-	      $(EXE_PARTITION) $(EXE_ASSEMBLE_2D_MPI) $(EXE_ASSEMBLE_3D_MPI)
+	      $(EXE_PARTITION_2D) $(EXE_PARTITION_3D) $(EXE_ASSEMBLE_2D_MPI) $(EXE_ASSEMBLE_3D_MPI)
 	rm -rf *.o *.mod *.dSYM tests/parallel/*.dSYM tests/mesh/*.dSYM tests/solver/*.dSYM

@@ -27,7 +27,7 @@ program test_assemble_3d_mpi
     type(mesh_type)                 :: mesh
     real(rp), allocatable           :: A(:,:), b(:)
     integer(ip)                     :: rank, size, ierr
-    integer                         :: ncoords, nboundary, i, nprint
+    integer(ip)                     :: ncoords, nboundary, i, nprint
 
     !---------------------------------------------------------------------
     ! 1) MPI init

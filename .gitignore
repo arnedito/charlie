@@ -20,4 +20,5 @@ tests/solver/test_assemble_3d_mpi
 tests/mesh/read_mesh_files/test_read_mesh
 tests/mesh/read_mesh_3d/test_read_mesh_3d
 tests/parallel/test_mesh_partition
+tests/parallel/test_mesh_partition_3d
 venv/
