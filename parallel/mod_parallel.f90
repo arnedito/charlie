@@ -81,11 +81,11 @@ contains
             if (n_elems > 0_ip) then
                send_count = n_elems * (mesh%ndim+1_ip)
                ! Temporarily allocate a buffer to hold that chunk
-               allocate(tmp(n_elems, mesh%ndim+1_ip))
+               allocate(tmp(mesh%ndim+1_ip, n_elems))
 
                ! Copy the chunk from the big global connectivity
                do i = 1, n_elems
-                  tmp(i,:) = mesh%lnods(:, s_elem + i - 1_ip)
+                  tmp(:, i) = mesh%lnods(:, s_elem + i - 1_ip)
                end do
 
                ! Send to rank r
@@ -106,10 +106,10 @@ contains
          !  - Copy from temp into the new local connectivity
          !---------------------------------------------------------------------
          if (num_local_elems > 0_ip) then
-            allocate(tmp(num_local_elems, mesh%ndim+1_ip))
+            allocate(tmp(mesh%ndim+1_ip, num_local_elems))
 
             do i = 1_ip, num_local_elems
-               tmp(i,:) = mesh%lnods(:, start_elem + i - 1_ip)
+               tmp(:, i) = mesh%lnods(:, start_elem + i - 1_ip)
             end do
 
             ! Deallocate the original big array
