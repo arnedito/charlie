@@ -1,10 +1,10 @@
 $--------------------------------------------------
  DIMENSIONS
-   NODAL_POINTS    5176
-   ELEMENTS        31266
-   BOUNDARIES      1588
+   NODAL_POINTS    1139 
+   ELEMENTS        4569 
+   BOUNDARIES      1468 
    SPACE_DIMENSIONS= 3
-   TYPES_OF_ELEMS= TRI03
+   TYPES_OF_ELEMS= TET04
  END_DIMENSIONS
 $--------------------------------------------------
  GEOMETRY
